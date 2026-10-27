@@ -1,0 +1,40 @@
+name: Build Multi-Assistant v5 Android Fixed
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Extract fixed Android source
+        run: |
+          mkdir android
+          unzip -q Multi_Assistant_v5_Android_Source_Fixed.zip -d android
+      - name: Compile Android APK
+        working-directory: android
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Android OAuth signing certificate
+        working-directory: android
+        run: gradle :app:signingReport --no-daemon > SIGNING_CERT_REPORT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Multi-Assistant-Android-v5-Fixed-APK-debug
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/SIGNING_CERT_REPORT.txt
+          if-no-files-found: error
